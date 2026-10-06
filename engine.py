@@ -108,6 +108,7 @@ class World:
         if action not in ACTIONS or not m or m['resigned']: return False
         if action!='return' and (m['ban_until']>self.tick or self.phase in ('evakuierung','wahl')): return False
         if target and (target is m or target['resigned']): return False
+        if action in ('chat','deal') and target and target['state']!='seated': return False
         if action in ('chat','deal','heckle','brawl') and not target: return False
         cause=f"{m['personality']}; Stress {m['stress']:.0f}, Ehrgeiz {m['ambition']:.0f}, Treue {m['loyalty']:.0f}"
         if target: cause+=f", Beziehung {self.rel(m,target):+.0f}"
@@ -164,6 +165,7 @@ class World:
         elif action=='brawl':
             if not forced and self.tick-self.last_brawl<20: return False
             self.last_brawl=self.tick
+            if self.speaker in (m['id'],target['id']): self.speaker=None
             center=[(m['position'][0]+target['position'][0])/2,(m['position'][1]+target['position'][1])/2]
             self.move(m,'fighting',center,6); self.move(target,'fighting',[center[0]+.035,center[1]],6)
             self.change_rel(m,target,-25); self.change_rel(target,m,-25)
@@ -180,7 +182,9 @@ class World:
             if m['ban_until']>self.tick: return False
             self.move(m,'seated',m['home'],0); self.log('return',f"{m['name']} kehrt zurück.",[m['id']],'Pause beendet',6)
         elif action=='resign':
-            m['resigned']=True; self.move(m,'resigned',[1.05,.88],0); self.stats['trust']=clamp(self.stats['trust']-2)
+            m['resigned']=True
+            if self.speaker==m['id']: self.speaker=None
+            self.move(m,'resigned',[1.05,.88],0); self.stats['trust']=clamp(self.stats['trust']-2)
             self.log('resign',f"{m['name']} legt das Mandat nieder. Sitz bleibt bis zur Wahl leer.",[m['id']],cause,15); self.check_majority()
         elif action=='switch':
             others=[p for p in self.parties if p!=m['party'] and p!='Fraktionslos']
