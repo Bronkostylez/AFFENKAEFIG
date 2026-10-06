@@ -88,6 +88,11 @@ class EngineTests(unittest.TestCase):
     def test_valid_proposal(self):
         self.w.running=True;self.a['cooldown']=0;self.assertTrue(self.w.apply_proposal({'actor':1,'target':26,'action':'chat','text':'Wir reden.'}))
     def test_stale_proposal(self): self.assertFalse(self.w.apply_proposal({'actor':1,'action':'speech','text':'Hi'}))
+    def test_no_speaker_hijack(self):
+        self.w.act(self.a,'speech'); self.assertFalse(self.w.act(self.b,'deal',self.a))
+        self.assertEqual(self.a['state'],'speaking')
+    def test_brawl_interrupts_speaker(self):
+        self.w.act(self.a,'speech'); self.w.act(self.b,'brawl',self.a,True); self.assertIsNone(self.w.speaker)
     def test_long_simulation(self):
         for seed in (7,42,75):
             w=World(seed);w.running=True;w.chaos=3
